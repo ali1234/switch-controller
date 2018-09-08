@@ -94,7 +94,7 @@ class Controller(object):
         state = State(hat, buttons, *axis)
         # TODO: quantize
         self.previous_state = state
-        return state.hex + b'\n'
+        return state
 
     @staticmethod
     def enumerate():

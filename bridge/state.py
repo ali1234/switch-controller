@@ -59,6 +59,15 @@ class State(object):
     def fromhex(cls, hex):
         return cls.frombytes(binascii.unhexlify(hex.strip()))
 
+    @classmethod
+    def all(cls):
+        return cls(hat=0xff, buttons=0xffff, lx=0xff, ly=0xff, rx=0xff, ry=0xff)
+
+    @classmethod
+    def none(cls):
+        return cls(hat=0, buttons=0, lx=0, ly=0, rx=0, ry=0)
+
+
     def __repr__(self):
         return '{:s}(hat=0x{:x}, buttons=0x{:x}, lx=0x{:x}, ly=0x{:x}, rx=0x{:x}, ry=0x{:x})'.format(
             type(self).__name__, self.hat, self.buttons, *self._axes
