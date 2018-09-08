@@ -4,7 +4,10 @@ import struct
 
 import sdl2
 
+from .state import State
+
 logger = logging.getLogger(__name__)
+
 
 class Controller(object):
 
@@ -73,6 +76,8 @@ class Controller(object):
         self.axis_deadzone = axis_deadzone
         self.trigger_deadzone = trigger_deadzone
 
+        self.previous_state = State()
+
     def __iter__(self):
         return self
 
@@ -86,8 +91,10 @@ class Controller(object):
         rawaxis = [sdl2.SDL_GameControllerGetAxis(self.controller, n) for n in Controller.axismapping]
         axis = [((0 if abs(x) < self.axis_deadzone else x) >> 8) + 128 for x in rawaxis]
 
-        rawbytes = struct.pack('>BHBBBB', hat, buttons, *axis)
-        return binascii.hexlify(rawbytes) + b'\n'
+        state = State(hat, buttons, *axis)
+        # TODO: quantize
+        self.previous_state = state
+        return state.hex + b'\n'
 
     @staticmethod
     def enumerate():
