@@ -86,7 +86,7 @@ def main():
     logger.info('Using {:s} at {:d} baud for comms.'.format(args.port, args.baud_rate))
 
     with NonBlockingInput():
-        with MacroManager(states, macrosfilename=args.load_macros) as mm:
+        with MacroManager(states, macrosfilename=args.load_macros, globalrecfilename=args.record) as mm:
             with tqdm(unit=' updates', disable=args.quiet, dynamic_ncols=True) as pbar:
 
                 try:
