@@ -2,7 +2,12 @@
 
 
 import argparse
+import fcntl
 import itertools
+import logging
+import os
+import sys
+import termios
 
 import sdl2
 import sdl2.ext
@@ -10,41 +15,34 @@ import serial
 
 from tqdm import tqdm
 
-curses_available = False
-
-try:
-    import curses
-    curses_available = True
-except ImportError:
-    pass
-
 from .controller import Controller
 from .state import State
 from .macros import MacroManager
 
+class Handler(logging.Handler):
+    def emit(self, record):
+        tqdm.write(self.format(record))
 
-class KeyboardContext(object):
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+root_logger.handlers = [Handler()]
+logger = logging.getLogger(__name__)
+
+
+class NonBlockingInput(object):
+
     def __enter__(self):
-        if curses_available:
-            self.stdscr = curses.initscr()
-            curses.noecho()
-            curses.cbreak()
-            self.stdscr.keypad(True)
-            self.stdscr.nodelay(True)
-        return self
+        self.old = termios.tcgetattr(sys.stdin)
+        new = termios.tcgetattr(sys.stdin)
+        new[3] = new[3] & ~(termios.ICANON | termios.ECHO)
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, new)
+
+        # set for non-blocking io
+        orig_fl = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
+        fcntl.fcntl(sys.stdin, fcntl.F_SETFL, orig_fl | os.O_NONBLOCK)
 
     def __exit__(self, *args):
-        if curses_available:
-            curses.nocbreak()
-            self.stdscr.keypad(False)
-            curses.echo()
-            curses.endwin()
-
-    def getch(self):
-        if curses_available:
-            return self.stdscr.getch()
-        else:
-            return curses.ERR
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old)
 
 
 def replay_states(filename):
@@ -64,8 +62,14 @@ def main():
     parser.add_argument('-d', '--dontexit', action='store_true', help='Switch to live input when playback finishes, instead of exiting. Default: False.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Disable speed meter. Default: False.')
     parser.add_argument('-M', '--load-macros', type=str, default=None, help='Load in-line macro definition file. Default: None')
+    parser.add_argument('-D', '--log-level', type=str, default='INFO', help='Debugging level. CRITICAL, ERROR, WARNING, INFO, DEBUG. Default=INFO')
 
     args = parser.parse_args()
+
+    numeric_level = getattr(logging, args.log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % args.log_level)
+    logging.basicConfig(level=numeric_level)
 
     if args.list_controllers:
         Controller.enumerate()
@@ -79,11 +83,11 @@ def main():
         states = itertools.chain(replay_states(args.playback), states)
 
     ser = serial.Serial(args.port, args.baud_rate, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None)
-    print('Using {:s} at {:d} baud for comms.'.format(args.port, args.baud_rate))
+    logger.info('Using {:s} at {:d} baud for comms.'.format(args.port, args.baud_rate))
 
-    with KeyboardContext() as kb:
+    with NonBlockingInput():
         with MacroManager(states, macrosfilename=args.load_macros) as mm:
-            with tqdm(unit=' updates', disable=args.quiet) as pbar:
+            with tqdm(unit=' updates', disable=args.quiet, dynamic_ncols=True) as pbar:
 
                 try:
 
@@ -94,10 +98,7 @@ def main():
                             # state to be updated.
                             pass
 
-                        try:
-                            mm.key_pressed(chr(kb.getch()))
-                        except ValueError:
-                            pass
+                        mm.key_pressed(sys.stdin.read(1))
 
                         try:
                             message = next(mm).hex
@@ -116,7 +117,7 @@ def main():
                                 print('Arduino reported buffer overrun.')
 
                 except KeyboardInterrupt:
-                    print('\nExiting due to keyboard interrupt.')
+                    logger.critical('\nExiting due to keyboard interrupt.')
 
 
 if __name__ == '__main__':
