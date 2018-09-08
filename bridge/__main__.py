@@ -3,15 +3,10 @@
 
 import argparse
 import itertools
-from contextlib import contextmanager
 
 import sdl2
 import sdl2.ext
-import struct
-import binascii
 import serial
-import math
-import time
 
 from tqdm import tqdm
 
@@ -23,10 +18,10 @@ try:
 except ImportError:
     pass
 
-
 from .controller import Controller
 from .state import State
 from .macros import MacroManager
+
 
 class KeyboardContext(object):
     def __enter__(self):
@@ -58,9 +53,6 @@ def replay_states(filename):
             yield State.fromhex(line)
 
 
-
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--list-controllers', action='store_true', help='Display a list of controllers attached to the system.')
@@ -78,15 +70,6 @@ def main():
     if args.list_controllers:
         Controller.enumerate()
         exit(0)
-
-    macros = {}
-
-    if args.load_macros is not None:
-        with open(args.load_macros) as f:
-            for line in f:
-                line = line.strip().split(maxsplit=2)
-                if len(line) == 2:
-                    macros[line[0]] = line[1]
 
     states = []
 
@@ -134,6 +117,7 @@ def main():
 
                 except KeyboardInterrupt:
                     print('\nExiting due to keyboard interrupt.')
+
 
 if __name__ == '__main__':
     main()

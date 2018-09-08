@@ -1,6 +1,4 @@
-import binascii
 import logging
-import struct
 
 import sdl2
 
