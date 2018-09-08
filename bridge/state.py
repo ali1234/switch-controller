@@ -64,6 +64,55 @@ class State(object):
             type(self).__name__, self.hat, self.buttons, *self._axes
         )
 
+    def __and__(self, other):
+        return State(
+            self.hat & other.hat,
+            self.buttons & other.buttons,
+            *[x&y for x, y in zip(self.axes, other.axes)]
+        )
+
+    def __xor__(self, other):
+        return State(
+            self.hat ^ other.hat,
+            self.buttons ^ other.buttons,
+            *[x^y for x, y in zip(self.axes, other.axes)]
+        )
+
+    def __or__(self, other):
+        return State(
+            self.hat | other.hat,
+            self.buttons | other.buttons,
+            *[x|y for x, y in zip(self.axes, other.axes)]
+        )
+
+    def __iand__(self, other):
+        self.hat &= other.hat
+        self.buttons &= other.buttons
+        for x in range(len(self._axes)):
+            self._axes[x] &= other._axes[x]
+        return self
+
+    def __ixor__(self, other):
+        self.hat ^= other.hat
+        self.buttons ^= other.buttons
+        for x in range(len(self._axes)):
+            self._axes[x] ^= other._axes[x]
+        return self
+
+    def __ior__(self, other):
+        self.hat |= other.hat
+        self.buttons |= other.buttons
+        for x in range(len(self._axes)):
+            self._axes[x] |= other._axes[x]
+        return self
+
+    def __invert__(self):
+        return State(
+            ~self.hat&0xff,
+            ~self.buttons&0xffff,
+            *[~x&0xff for x in self._axes]
+        )
+
 
 if __name__ == '__main__':
     # Some tests
@@ -73,5 +122,6 @@ if __name__ == '__main__':
     print(s)
     s.axes = [1, 2, 3, 4]
     print(s)
+    print(s^s)
     print(s.hex)
     print(State.fromhex(s.hex))
