@@ -11,3 +11,4 @@
 config.py
 config2.py
 /.idea
+__pycache__
