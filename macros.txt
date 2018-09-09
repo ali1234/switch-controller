@@ -1,8 +1,8 @@
 # macros to mash one button repeatedly:
-x mash 20 00000100000000
-a mash 20 00000200000000
-b mash 20 00000400000000
-y mash 20 00000800000000
+y mash 20 00000100000000
+b mash 20 00000200000000
+a mash 20 00000400000000
+x mash 20 00000800000000
 
 # file-based macro which can be recorded at run time:
 m file m.txt
