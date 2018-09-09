@@ -101,9 +101,9 @@ def main():
                         mm.key_pressed(sys.stdin.read(1))
 
                         try:
-                            message = next(mm).hex
-                            ser.write(message + b'\n')
-                            pbar.set_description('Sent {:s}'.format(message.decode('utf8')))
+                            state = next(mm)
+                            ser.write(state.hex + b'\n')
+                            pbar.set_description('Sent {:s}'.format(state.hexstr))
                             pbar.update()
                         except StopIteration:
                             break

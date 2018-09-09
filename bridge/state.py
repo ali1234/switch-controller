@@ -45,11 +45,18 @@ class State(object):
 
     @property
     def bytes(self):
+        """Returns the state as a raw byte string."""
         return struct.pack('>BHBBBB', self.hat, self.buttons, *self._axes)
 
     @property
     def hex(self):
+        """Returns the state encoded as a hexadecimal byte string suitable for writing to a file or serial port."""
         return binascii.hexlify(self.bytes)
+
+    @property
+    def hexstr(self):
+        """Returns the state encoded as a string suitable for printing."""
+        return self.hex.decode('utf8')
 
     @classmethod
     def frombytes(cls, b):
