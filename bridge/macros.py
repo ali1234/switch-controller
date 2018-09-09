@@ -22,6 +22,8 @@ class MacroManager(object):
         if macrosfilename is not None:
             with open(macrosfilename) as f:
                 for line in f:
+                    if line.startswith('#'):
+                        continue
                     line = line.strip().split()
                     if len(line) == 3:
                         self.macros[line[0]] = (line[1], line[2], State.all())
@@ -46,7 +48,7 @@ class MacroManager(object):
         if self.recordfile is None:
             if self.playmacro == macro:
                 self.play_stop()
-            if self.macros[macro][0] == 'file':
+            if self.macros[macro][0] in ['file', 'fileloop']:
                 self.recordmacro = macro
                 self.recordfile = open(self.macros[macro][1], 'wb')
                 self.log_macro_event('Recording to', macro)
@@ -137,6 +139,17 @@ def file(filename):
         with open(filename, 'rb') as replay:
             for line in replay:
                 yield State.fromhex(line)
+    except FileNotFoundError:
+        logger.error('Macro file "{:s}" does not exist yet.'.format(filename))
+        raise StopIteration
+
+@macro
+def fileloop(filename):
+    try:
+        while True:
+            with open(filename, 'rb') as replay:
+                for line in replay:
+                    yield State.fromhex(line)
     except FileNotFoundError:
         logger.error('Macro file "{:s}" does not exist yet.'.format(filename))
         raise StopIteration
