@@ -60,18 +60,22 @@ class State(object):
 
     @classmethod
     def frombytes(cls, b):
+        """Returns a State object initialized from raw bytes."""
         return cls(*struct.unpack('>BHBBBB', b))
 
     @classmethod
     def fromhex(cls, hex):
+        """Returns a state object initialized from a hexadecimal byte string."""
         return cls.frombytes(binascii.unhexlify(hex.strip()))
 
     @classmethod
     def all(cls):
+        """Returns a state object where all bits are 1."""
         return cls(hat=0xff, buttons=0xffff, lx=0xff, ly=0xff, rx=0xff, ry=0xff)
 
     @classmethod
     def none(cls):
+        """Returns a state object where all bits are 0."""
         return cls(hat=0, buttons=0, lx=0, ly=0, rx=0, ry=0)
 
 
