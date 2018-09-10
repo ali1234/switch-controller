@@ -110,8 +110,9 @@ def main():
                             if event.type == sdl2.SDL_WINDOWEVENT:
                                 if event.window.event == sdl2.SDL_WINDOWEVENT_CLOSE:
                                     raise WindowClosed
-                            elif event.type == sdl2.SDL_KEYDOWN:
-                                logger.debug('key!')
+                            else:
+                                if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
+                                    logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
 
                         state = next(mm)
                         ser.write(state.hex + b'\n')
