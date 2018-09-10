@@ -18,6 +18,7 @@ from tqdm import tqdm
 from .controller import Controller
 from .state import State
 from .macros import MacroManager
+from .window import Window, WindowClosed
 
 class Handler(logging.Handler):
     def emit(self, record):
@@ -29,26 +30,29 @@ root_logger.handlers = [Handler()]
 logger = logging.getLogger(__name__)
 
 
-class NonBlockingInput(object):
-
-    def __enter__(self):
-        self.old = termios.tcgetattr(sys.stdin)
-        new = termios.tcgetattr(sys.stdin)
-        new[3] = new[3] & ~(termios.ICANON | termios.ECHO)
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, new)
-
-        # set for non-blocking io
-        orig_fl = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
-        fcntl.fcntl(sys.stdin, fcntl.F_SETFL, orig_fl | os.O_NONBLOCK)
-
-    def __exit__(self, *args):
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old)
-
-
 def replay_states(filename):
     with open(filename, 'rb') as replay:
         for line in replay:
             yield State.fromhex(line)
+
+
+class Recorder(object):
+    def __init__(self, filename):
+        self.filename = filename
+        self.file = None
+
+    def __enter__(self):
+        if self.filename is not None:
+            self.file = open(self.filename, 'wb')
+        return self
+
+    def __exit__(self, *args):
+        if self.file is not None:
+            self.file.close()
+
+    def write(self, data):
+        if self.file is not None:
+            self.file.write(data)
 
 
 def main():
@@ -85,8 +89,15 @@ def main():
     ser = serial.Serial(args.port, args.baud_rate, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None)
     logger.info('Using {:s} at {:d} baud for comms.'.format(args.port, args.baud_rate))
 
-    with NonBlockingInput():
-        with MacroManager(states, macrosfilename=args.load_macros, globalrecfilename=args.record) as mm:
+    window = None
+    try:
+        window = Window()
+    except sdl2.ext.common.SDLError:
+        logger.warning('Could not create a window with SDL. Keyboard input will not be available.')
+        pass
+
+    with MacroManager(states, macrosfilename=args.load_macros) as mm:
+        with Recorder(args.record) as record:
             with tqdm(unit=' updates', disable=args.quiet, dynamic_ncols=True) as pbar:
 
                 try:
@@ -96,17 +107,17 @@ def main():
                         for event in sdl2.ext.get_events():
                             # we have to fetch the events from SDL in order for the controller
                             # state to be updated.
-                            pass
+                            if event.type == sdl2.SDL_WINDOWEVENT:
+                                if event.window.event == sdl2.SDL_WINDOWEVENT_CLOSE:
+                                    raise WindowClosed
+                            elif event.type == sdl2.SDL_KEYDOWN:
+                                logger.debug('key!')
 
-                        mm.key_pressed(sys.stdin.read(1))
-
-                        try:
-                            state = next(mm)
-                            ser.write(state.hex + b'\n')
-                            pbar.set_description('Sent {:s}'.format(state.hexstr))
-                            pbar.update()
-                        except StopIteration:
-                            break
+                        state = next(mm)
+                        ser.write(state.hex + b'\n')
+                        record.write(state.hex + b'\n')
+                        pbar.set_description('Sent {:s}'.format(state.hexstr))
+                        pbar.update()
 
                         while True:
                             # wait for the arduino to request another state.
@@ -114,10 +125,14 @@ def main():
                             if response == b'U':
                                 break
                             elif response == b'X':
-                                print('Arduino reported buffer overrun.')
+                                logger.error('Arduino reported buffer overrun.')
 
+                except StopIteration:
+                    logger.info('Exiting because replay finished.')
                 except KeyboardInterrupt:
-                    logger.critical('\nExiting due to keyboard interrupt.')
+                    logger.info('Exiting due to keyboard interrupt.')
+                except WindowClosed:
+                    logger.info('Exiting because input window was closed.')
 
 
 if __name__ == '__main__':

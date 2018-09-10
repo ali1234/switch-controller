@@ -5,7 +5,7 @@ from .state import State
 logger = logging.getLogger(__name__)
 
 class MacroManager(object):
-    def __init__(self, states, macrosfilename=None, globalrecfilename=None):
+    def __init__(self, states, macrosfilename=None):
         self.states = states
         self.macros = {}
 
@@ -14,10 +14,6 @@ class MacroManager(object):
 
         self.playmacro = None
         self.playiter = None
-
-        self.globalrecfile = None
-        if globalrecfilename is not None:
-            self.globalrecfile = open(globalrecfilename, 'wb')
 
         if macrosfilename is not None:
             with open(macrosfilename) as f:
@@ -112,9 +108,6 @@ class MacroManager(object):
 
         if self.recordfile is not None:
             self.recordfile.write(n.hex + b'\n')
-
-        if self.globalrecfile is not None:
-            self.globalrecfile.write(n.hex + b'\n')
 
         return n
 
