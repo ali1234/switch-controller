@@ -33,7 +33,6 @@ class Window(object):
         ]
 
         self.buttons = [(padding + (n * (padding + (32>>div))), height, 32>>div, 32>>div) for n in range(14)]
-        logger.info(self.buttons)
 
         height += padding + (32>>div)
 
