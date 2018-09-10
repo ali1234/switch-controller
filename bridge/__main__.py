@@ -86,7 +86,7 @@ def main():
     if args.playback is not None:
         states = itertools.chain(replay_states(args.playback), states)
 
-    ser = serial.Serial(args.port, args.baud_rate, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=None)
+    ser = serial.Serial(args.port, args.baud_rate, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0.1)
     logger.info('Using {:s} at {:d} baud for comms.'.format(args.port, args.baud_rate))
 
     window = None
@@ -95,6 +95,8 @@ def main():
     except sdl2.ext.common.SDLError:
         logger.warning('Could not create a window with SDL. Keyboard input will not be available.')
         pass
+
+    serial_state = True
 
     with MacroManager(states, macrosfilename=args.load_macros) as mm:
         with Recorder(args.record) as record:
@@ -114,21 +116,23 @@ def main():
                                 if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
                                     logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
 
-                        state = next(mm)
-                        ser.write(state.hex + b'\n')
-                        record.write(state.hex + b'\n')
-                        pbar.set_description('Sent {:s}'.format(state.hexstr))
-                        pbar.update()
-                        if window is not None:
-                            window.update(state)
-
-                        while True:
-                            # wait for the arduino to request another state.
-                            response = ser.read(1)
-                            if response == b'U':
-                                break
-                            elif response == b'X':
-                                logger.error('Arduino reported buffer overrun.')
+                        # wait for the arduino to request another state.
+                        response = ser.read(1)
+                        if response == b'U':
+                            state = next(mm)
+                            ser.write(state.hex + b'\n')
+                            record.write(state.hex + b'\n')
+                            pbar.set_description('Sent {:s}'.format(state.hexstr))
+                            pbar.update()
+                            if window is not None:
+                                window.update(state)
+                            serial_state = True
+                        elif response == b'X':
+                            logger.error('Arduino reported buffer overrun.')
+                        else:
+                            if serial_state:
+                                logger.debug('Serial read timed out.')
+                                serial_state = False
 
                 except StopIteration:
                     logger.info('Exiting because replay finished.')

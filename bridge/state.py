@@ -134,7 +134,7 @@ class State(object):
         )
 
     def __eq__(self, other):
-        return self.hat == other.hat and self.buttons == other.buttons and all([x == y for x, y in zip(self.axes, other.axes)])
+        return isinstance(other, State) and self.hat == other.hat and self.buttons == other.buttons and all([x == y for x, y in zip(self.axes, other.axes)])
 
 if __name__ == '__main__':
     # Some tests

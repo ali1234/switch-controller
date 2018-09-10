@@ -42,7 +42,8 @@ class Window(object):
         self.window.show()
         self.renderer = sdl2.ext.Renderer(self.window)
 
-        self.prev_state = State()
+        self.prev_state = None
+        self.update(State())
 
     def update(self, state):
         """Draw the supplied controller state in the SDL window."""
