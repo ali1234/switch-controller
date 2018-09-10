@@ -118,6 +118,8 @@ def main():
                         record.write(state.hex + b'\n')
                         pbar.set_description('Sent {:s}'.format(state.hexstr))
                         pbar.update()
+                        if window is not None:
+                            window.update(state)
 
                         while True:
                             # wait for the arduino to request another state.
