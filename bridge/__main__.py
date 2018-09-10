@@ -131,7 +131,7 @@ def main():
                             logger.error('Arduino reported buffer overrun.')
                         else:
                             if serial_state:
-                                logger.debug('Serial read timed out.')
+                                logger.warning('Serial read timed out.')
                                 serial_state = False
 
                 except StopIteration:
