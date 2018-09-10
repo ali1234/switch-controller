@@ -44,6 +44,9 @@ class Controller(object):
 
     def __init__(self, controller_id, axis_deadzone=10000, trigger_deadzone=0):
 
+        # Make sure we get joystick events even if in window mode and not focused.
+        sdl2.SDL_SetHint(sdl2.SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, b"1")
+
         sdl2.SDL_Init(sdl2.SDL_INIT_GAMECONTROLLER)
 
         # Mapping for X-box S Controller
