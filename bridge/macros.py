@@ -1,13 +1,13 @@
 import logging
+import pathlib
 
 from .state import State
 
 logger = logging.getLogger(__name__)
 
 class MacroManager(object):
-    def __init__(self, states, macrosfilename=None):
+    def __init__(self, states, macros_dir='.'):
         self.states = states
-        self.macros = {}
 
         self.recordmacro = None
         self.recordfile = None
@@ -15,16 +15,11 @@ class MacroManager(object):
         self.playmacro = None
         self.playiter = None
 
-        if macrosfilename is not None:
-            with open(macrosfilename) as f:
-                for line in f:
-                    if line.startswith('#'):
-                        continue
-                    line = line.strip().split()
-                    if len(line) == 3:
-                        self.macros[line[0]] = (line[1], line[2], State.all())
-                    if len(line) == 4:
-                        self.macros[line[0]] = (line[1], line[2], State.fromhex(line[3]))
+        self.macros_dir = pathlib.Path(macros_dir)
+        if not self.macros_dir.is_dir():
+            raise NotADirectoryError("Macro dir doesn't exist or is not a directory.")
+
+        self.previous_state = State()
 
     def __enter__(self):
         return self
@@ -34,22 +29,17 @@ class MacroManager(object):
         self.play_stop()
 
     def log_macro_event(self, event, macro):
-        logger.info('{:s} macro {:s} : {:s}({:s}), mask: {:s}'.format(
-                event, macro, self.macros[macro][0],
-                self.macros[macro][1],
-                self.macros[macro][2].hexstr
+        logger.info('{:s} macro {:s}'.format(
+                event, macro.name
         ))
 
     def record_start(self, macro):
         if self.recordfile is None:
             if self.playmacro == macro:
                 self.play_stop()
-            if self.macros[macro][0] in ['file', 'fileloop']:
-                self.recordmacro = macro
-                self.recordfile = open(self.macros[macro][1], 'wb')
-                self.log_macro_event('Recording to', macro)
-            else:
-                logger.error('Key {:s} is not bound to a file macro. Can\'t record.'.format(macro))
+            self.recordmacro = macro
+            self.recordfile = macro.open('wb')
+            self.log_macro_event('Recording to', macro)
         elif self.recordmacro == macro:
             self.record_stop()
         else:
@@ -73,7 +63,7 @@ class MacroManager(object):
             else:
                 self.play_stop()
         self.playmacro = macro
-        self.playiter = macro_funcs[self.macros[macro][0]](self.macros[macro][1])
+        self.playiter = file(macro)
         self.log_macro_event('Playing', self.playmacro)
 
     def play_stop(self):
@@ -84,25 +74,35 @@ class MacroManager(object):
             self.playmacro = None
 
     def key_pressed(self, k):
-        if len(k) != 1:
-            return
-        if k in self.macros:
-            self.play_start(k)
-        elif k.lower() in self.macros:
-            self.record_start(k.lower())
+
+        if self.recordmacro:
+            self.record_stop()
         else:
-            logger.error('Key "{:s}" is not bound to a macro. Ignored.'.format(k.lower()))
+            macro_name = self.previous_state.hexstr[:6] + '.macro'
+            macro_file = self.macros_dir / macro_name
+
+            if not macro_file.exists():
+                self.record_start(macro_file)
+            elif macro_file.is_file():
+                self.play_start(macro_file)
+            else:
+                raise FileNotFoundError("Macro file exists but isn't a regular file.")
 
     def __iter__(self):
         return self
 
     def __next__(self):
         n = next(self.states)
+        self.previous_state = n
         if self.playiter is not None:
             try:
                 m = next(self.playiter)
-                mask = self.macros[self.playmacro][2]
-                n = (n&~mask) | (m&mask)
+                # OR buttons
+                n |= (m&State(0x00, 0xffff, 0, 0, 0, 0))
+                # user hat overrides macro hat if not centred
+                n.hat = m.hat if n.hat == 8 else n.hat
+                # user axes override macro axes if > 50%
+                n.axes = [na if (na < 64) or (na > 192) else ma for na, ma in zip(n.axes, m.axes)]
             except StopIteration:
                 self.play_stop()
 

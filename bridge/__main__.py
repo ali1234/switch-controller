@@ -65,7 +65,7 @@ def main():
     parser.add_argument('-P', '--playback', type=str, default=None, help='Play back events from file.')
     parser.add_argument('-d', '--dontexit', action='store_true', help='Switch to live input when playback finishes, instead of exiting. Default: False.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Disable speed meter. Default: False.')
-    parser.add_argument('-M', '--load-macros', type=str, default=None, help='Load in-line macro definition file. Default: None')
+    parser.add_argument('-M', '--macros-dir', type=str, default='.', help='Directory to save macros. Default: current directory.')
     parser.add_argument('-D', '--log-level', type=str, default='INFO', help='Debugging level. CRITICAL, ERROR, WARNING, INFO, DEBUG. Default=INFO')
 
     args = parser.parse_args()
@@ -98,7 +98,7 @@ def main():
 
     serial_state = True
 
-    with MacroManager(states, macrosfilename=args.load_macros) as mm:
+    with MacroManager(states, macros_dir=args.macros_dir) as mm:
         with Recorder(args.record) as record:
             with tqdm(unit=' updates', disable=args.quiet, dynamic_ncols=True) as pbar:
 
@@ -115,6 +115,8 @@ def main():
                             else:
                                 if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
                                     logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
+                                    if  event.key.keysym.sym == sdl2.SDLK_SPACE:
+                                        mm.key_pressed(True)
                                 elif event.type == sdl2.SDL_KEYUP:
                                     logger.debug('Key up: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
 
