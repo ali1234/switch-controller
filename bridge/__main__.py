@@ -73,7 +73,7 @@ def main():
     numeric_level = getattr(logging, args.log_level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError('Invalid log level: %s' % args.log_level)
-    logging.basicConfig(level=numeric_level)
+    root_logger.setLevel(numeric_level)
 
     if args.list_controllers:
         Controller.enumerate()
@@ -115,6 +115,8 @@ def main():
                             else:
                                 if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
                                     logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
+                                if event.type == sdl2.SDL_KEYUP and event.key.repeat == 0:
+                                    logger.debug('Key up: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
 
                         # wait for the arduino to request another state.
                         response = ser.read(1)
