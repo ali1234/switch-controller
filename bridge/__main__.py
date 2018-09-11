@@ -115,7 +115,7 @@ def main():
                             else:
                                 if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
                                     logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
-                                if event.type == sdl2.SDL_KEYUP and event.key.repeat == 0:
+                                elif event.type == sdl2.SDL_KEYUP:
                                     logger.debug('Key up: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
 
                         # wait for the arduino to request another state.
