@@ -1,3 +1,3 @@
-[submodule "lufa"]
-	path = lufa
-	url = https://github.com/abcminiuser/lufa.git
+[submodule "firmware/lufa"]
+	path = firmware/lufa
+	url = git://github.com/abcminiuser/lufa.git
