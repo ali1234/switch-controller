@@ -2,12 +2,8 @@
 
 
 import argparse
-import fcntl
 import itertools
 import logging
-import os
-import sys
-import termios
 
 import sdl2
 import sdl2.ext
