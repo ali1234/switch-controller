@@ -1,2 +1,12 @@
 /.idea
 __pycache__
+.DS_Store
+*.d
+*.o
+*.bin
+*.elf
+*.hex
+*.lss
+*.map
+*.sym
+*.eep
