@@ -60,8 +60,8 @@ void Serial_Task(void) {
 
 		if ((c == '\r' || c == '\n')) {
 			if(l == 14) {
-				HAT2 = b[0];
-				buttons = (b[1] << 8) | b[2];
+				buttons = (b[0] << 8) | b[1];
+				HAT2 = b[2];
 				LX2 = b[3];
 				LY2 = b[4];
 				RX2 = b[5];

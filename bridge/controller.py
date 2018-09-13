@@ -101,7 +101,7 @@ class Controller(object):
         rawaxis = [sdl2.SDL_GameControllerGetAxis(self.controller, n) for n in Controller.axismapping]
         axis = [((0 if abs(x) < self.axis_deadzone else x) >> 8) + 128 for x in rawaxis]
 
-        state = State(hat, buttons, *axis)
+        state = State(buttons, hat, *axis)
         # TODO: quantize
         self.previous_state = state
         return state

@@ -27,7 +27,7 @@ class State(object):
     rx = Axis(2)
     ry = Axis(3)
 
-    def __init__(self, hat=8, buttons=0, lx=127, ly=127, rx=127, ry=127):
+    def __init__(self, buttons=0, hat=8, lx=127, ly=127, rx=127, ry=127):
         self.hat = hat
         self.buttons = buttons
         self._axes = [lx, ly, rx, ry]
@@ -46,7 +46,7 @@ class State(object):
     @property
     def bytes(self):
         """Returns the state as a raw byte string."""
-        return struct.pack('>BHBBBB', self.hat, self.buttons, *self._axes)
+        return struct.pack('>HBBBBB', self.buttons, self.hat, *self._axes)
 
     @property
     def hex(self):
@@ -61,7 +61,7 @@ class State(object):
     @classmethod
     def frombytes(cls, b):
         """Returns a State object initialized from raw bytes."""
-        return cls(*struct.unpack('>BHBBBB', b))
+        return cls(*struct.unpack('>HBBBBB', b))
 
     @classmethod
     def fromhex(cls, hex):
@@ -71,17 +71,17 @@ class State(object):
     @classmethod
     def all(cls):
         """Returns a state object where all bits are 1."""
-        return cls(hat=0xff, buttons=0xffff, lx=0xff, ly=0xff, rx=0xff, ry=0xff)
+        return cls(buttons=0xffff, hat=0xff, lx=0xff, ly=0xff, rx=0xff, ry=0xff)
 
     @classmethod
     def none(cls):
         """Returns a state object where all bits are 0."""
-        return cls(hat=0, buttons=0, lx=0, ly=0, rx=0, ry=0)
+        return cls(buttons=0, hat=0,lx=0, ly=0, rx=0, ry=0)
 
 
     def __repr__(self):
-        return '{:s}(hat=0x{:x}, buttons=0x{:x}, lx=0x{:x}, ly=0x{:x}, rx=0x{:x}, ry=0x{:x})'.format(
-            type(self).__name__, self.hat, self.buttons, *self._axes
+        return '{:s}(buttons=0x{:x}, hat=0x{:x}, lx=0x{:x}, ly=0x{:x}, rx=0x{:x}, ry=0x{:x})'.format(
+            type(self).__name__, self.buttons, self.hat, *self._axes
         )
 
     def __and__(self, other):
