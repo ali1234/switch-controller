@@ -63,7 +63,7 @@ class State(object):
     @property
     def bytes(self):
         """Returns the state as a raw byte string."""
-        return struct.pack('>HBBBBB', self.buttons, self.hat, *self._axes)
+        return struct.pack('<HBBBBB', self.buttons, self.hat, *self._axes)
 
     @property
     def hex(self):
@@ -78,7 +78,7 @@ class State(object):
     @classmethod
     def frombytes(cls, b):
         """Returns a State object initialized from raw bytes."""
-        return cls(*struct.unpack('>HBBBBB', b))
+        return cls(*struct.unpack('<HBBBBB', b))
 
     @classmethod
     def fromhex(cls, hex):
