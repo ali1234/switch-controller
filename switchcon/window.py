@@ -102,7 +102,7 @@ class Window(object):
 
             self.renderer.present()
 
-            self.prev_state = state
+            self.prev_state = state.copy()
 
 
 class WindowClosed(Exception):

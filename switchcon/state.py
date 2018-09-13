@@ -153,6 +153,9 @@ class State(object):
     def __eq__(self, other):
         return isinstance(other, State) and self.hat == other.hat and self.buttons == other.buttons and all([x == y for x, y in zip(self.axes, other.axes)])
 
+    def copy(self):
+        return State(self.buttons, self.hat, *self._axes)
+
 if __name__ == '__main__':
     # Some tests
     s = State()
