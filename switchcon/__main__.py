@@ -29,6 +29,7 @@ from .controller import Controller
 from .state import State
 from .macros import MacroManager
 from .window import Window, WindowClosed
+from .hal import HAL
 
 class Handler(logging.Handler):
     def emit(self, record):
@@ -60,17 +61,18 @@ class Recorder(object):
         if self.file is not None:
             self.file.close()
 
-    def write(self, data):
+    def write(self, state):
         if self.file is not None:
-            self.file.write(data)
+            self.file.write(state.hex + b'\n')
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--list-controllers', action='store_true', help='Display a list of controllers attached to the system.')
     parser.add_argument('-c', '--controller', type=str, default='0', help='Controller to use. Default: 0.')
+    parser.add_argument('-p', '--port', type=str, default='/dev/ttyUSB0', help='Serial port or "gadget" for direct USB mode. Default: /dev/ttyUSB0.')
     parser.add_argument('-b', '--baud-rate', type=int, default=115200, help='Baud rate. Default: 115200.')
-    parser.add_argument('-p', '--port', type=str, default='/dev/ttyUSB0', help='Serial port. Default: /dev/ttyUSB0.')
+    parser.add_argument('-u', '--udc', type=str, default='dummy_udc.0', help='UDC for direct USB mode. Default: dummy_udc.0 (loopback mode).')
     parser.add_argument('-R', '--record', type=str, default=None, help='Record events to file.')
     parser.add_argument('-P', '--playback', type=str, default=None, help='Play back events from file.')
     parser.add_argument('-d', '--dontexit', action='store_true', help='Switch to live input when playback finishes, instead of exiting. Default: False.')
@@ -96,9 +98,6 @@ def main():
     if args.playback is not None:
         states = itertools.chain(replay_states(args.playback), states)
 
-    ser = serial.Serial(args.port, args.baud_rate, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0.1)
-    logger.info('Using {:s} at {:d} baud for comms.'.format(args.port, args.baud_rate))
-
     window = None
     try:
         window = Window()
@@ -106,54 +105,47 @@ def main():
         logger.warning('Could not create a window with SDL. Keyboard input will not be available.')
         pass
 
-    serial_state = True
 
     with MacroManager(states, macros_dir=args.macros_dir) as mm:
         with Recorder(args.record) as record:
-            with tqdm(unit=' updates', disable=args.quiet, dynamic_ncols=True) as pbar:
+            with HAL(args.port, args.baud_rate, args.udc) as hal:
+                with tqdm(unit=' updates', disable=args.quiet, dynamic_ncols=True) as pbar:
 
-                try:
+                    try:
 
-                    while True:
+                        while True:
 
-                        for event in sdl2.ext.get_events():
-                            # we have to fetch the events from SDL in order for the controller
-                            # state to be updated.
-                            if event.type == sdl2.SDL_WINDOWEVENT:
-                                if event.window.event == sdl2.SDL_WINDOWEVENT_CLOSE:
-                                    raise WindowClosed
-                            else:
-                                if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
-                                    logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
-                                    if  event.key.keysym.sym == sdl2.SDLK_SPACE:
-                                        mm.key_pressed(True)
-                                elif event.type == sdl2.SDL_KEYUP:
-                                    logger.debug('Key up: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
+                            for event in sdl2.ext.get_events():
+                                # we have to fetch the events from SDL in order for the controller
+                                # state to be updated.
+                                if event.type == sdl2.SDL_WINDOWEVENT:
+                                    if event.window.event == sdl2.SDL_WINDOWEVENT_CLOSE:
+                                        raise WindowClosed
+                                else:
+                                    if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
+                                        logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
+                                        if  event.key.keysym.sym == sdl2.SDLK_SPACE:
+                                            mm.key_pressed(True)
+                                    elif event.type == sdl2.SDL_KEYUP:
+                                        logger.debug('Key up: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
 
-                        # wait for the arduino to request another state.
-                        response = ser.read(1)
-                        if response == b'U':
-                            state = next(mm)
-                            ser.write(state.hex + b'\n')
-                            record.write(state.hex + b'\n')
-                            pbar.set_description('Sent {:s}'.format(state.hexstr))
-                            pbar.update()
-                            if window is not None:
-                                window.update(state)
-                            serial_state = True
-                        elif response == b'X':
-                            logger.error('Arduino reported buffer overrun.')
-                        else:
-                            if serial_state:
-                                logger.warning('Serial read timed out.')
-                                serial_state = False
+                            # wait for the arduino to request another state.
+                            if hal.poll():
+                                state = next(mm)
+                                hal.write(state)
+                                record.write(state)
+                                pbar.set_description('Sent {:s}'.format(state.hexstr))
+                                pbar.update()
+                                if window is not None:
+                                    window.update(state)
+                                serial_state = True
 
-                except StopIteration:
-                    logger.info('Exiting because replay finished.')
-                except KeyboardInterrupt:
-                    logger.info('Exiting due to keyboard interrupt.')
-                except WindowClosed:
-                    logger.info('Exiting because input window was closed.')
+                    except StopIteration:
+                        logger.info('Exiting because replay finished.')
+                    except KeyboardInterrupt:
+                        logger.info('Exiting due to keyboard interrupt.')
+                    except WindowClosed:
+                        logger.info('Exiting because input window was closed.')
 
 
 if __name__ == '__main__':

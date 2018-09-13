@@ -11,7 +11,7 @@ setup(
     platforms=['linux'],
     packages=['switchcon'],
     install_requires=[
-        'functionfs', 'libaio',
+        'functionfs', 'tqdm', 'pyserial', 'pysdl2'
     ],
     entry_points={
         'console_scripts': [
