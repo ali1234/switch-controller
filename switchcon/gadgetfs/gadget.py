@@ -36,9 +36,16 @@ class USBHIDDescriptor(functionfs.USBDescriptorHeader):
     ]
 
 
+udc_eps = {
+    'dummy_udc': ['ep1in-bulk', 'ep2out-bulk'],
+    '20980000.usb': ['ep1in', 'ep2out'],
+}
+
 class Gadget(functionfs.Function):
 
     def __init__(self, udc, device_params, device_strings, report_desc):
+
+        self.udc = udc
 
         self.report_desc = report_desc
         self.device_strings = device_strings
@@ -147,11 +154,11 @@ class Gadget(functionfs.Function):
                     self.ep2des,
                 ])
 
-                ep1 = functionfs.EndpointINFile('/dev/gadget/ep1in-bulk', 'r+')
+                ep1 = functionfs.EndpointINFile('/dev/gadget/' + udc_eps[self.udc][0], 'r+')
                 ep1.write(ep1s)
                 self._ep_list.append(ep1)
 
-                ep2 = functionfs.EndpointINFile('/dev/gadget/ep2out-bulk', 'r+')
+                ep2 = functionfs.EndpointINFile('/dev/gadget/' + udc_eps[self.udc][1], 'r+')
                 ep2.write(ep2s)
                 self._ep_list.append(ep2)
 
