@@ -101,7 +101,7 @@ class Gadget(functionfs.Function):
         )
 
         self._path = '/dev/gadget'
-        ep0 = functionfs.Endpoint0File(os.path.join(self._path, 'dummy_udc'), 'r+')
+        ep0 = functionfs.Endpoint0File(os.path.join(self._path, udc), 'r+')
         self._ep_list = [ep0]
         self._ep_address_dict = {}
 

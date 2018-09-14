@@ -111,6 +111,8 @@ def HAL(port, baud_rate, udc):
         return GadgetWrapper(Gadget('switchcon', udc, device_params, device_strings, lambda g: HIDFunction(g, report_desc)))
 
     elif port == 'gadgetfs':
+        if udc == 'dummy_udc.0':
+            udc = 'dummy_udc'
         return GadgetWrapper(GadgetFS(udc, device_params, device_strings, report_desc))
 
     else:
