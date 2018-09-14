@@ -103,3 +103,14 @@ class Gadget(object):
 
     def remove_gadget(self):
         del Directory(Gadget.CONFIGDIR)[self._name]
+
+    def processEvents(self):
+        self._function.processEvents()
+
+    @property
+    def _report_requested(self):
+        return self._function._report_requested
+
+    @property
+    def _ep_list(self):
+        return self._function._ep_list
