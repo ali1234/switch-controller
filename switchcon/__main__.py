@@ -65,6 +65,11 @@ class Recorder(object):
         if self.file is not None:
             self.file.write(state.hex + b'\n')
 
+def fakeinput():
+    s = State()
+    for i in itertools.count():
+        s.buttons = i&0xffff
+        yield s
 
 def main():
     parser = argparse.ArgumentParser()
@@ -94,7 +99,10 @@ def main():
     states = []
 
     if args.playback is None or args.dontexit:
-        states = Controller(args.controller)
+        if args.controller == 'fake':
+            states = fakeinput()
+        else:
+            states = Controller(args.controller)
     if args.playback is not None:
         states = itertools.chain(replay_states(args.playback), states)
 
@@ -138,7 +146,6 @@ def main():
                                 pbar.update()
                                 if window is not None:
                                     window.update(state)
-                                serial_state = True
 
                     except StopIteration:
                         logger.info('Exiting because replay finished.')
