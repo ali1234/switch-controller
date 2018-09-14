@@ -20,7 +20,7 @@ import logging
 
 import serial
 
-from .gadget import Gadget, HIDFunction
+from .functionfs import Gadget, HIDFunction
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class HIDGadget(Gadget):
 
 
 def HAL(port, baud_rate, udc):
-    if port == 'gadget':
+    if port == 'functionfs':
 
         device_params = {
             'idVendor': '0x0f0d',

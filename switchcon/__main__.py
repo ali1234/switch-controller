@@ -75,7 +75,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--list-controllers', action='store_true', help='Display a list of controllers attached to the system.')
     parser.add_argument('-c', '--controller', type=str, default='0', help='Controller to use. Default: 0.')
-    parser.add_argument('-p', '--port', type=str, default='/dev/ttyUSB0', help='Serial port or "gadget" for direct USB mode. Default: /dev/ttyUSB0.')
+    parser.add_argument('-p', '--port', type=str, default='/dev/ttyUSB0', help='Serial port or "functionfs" for direct USB mode. Default: /dev/ttyUSB0.')
     parser.add_argument('-b', '--baud-rate', type=int, default=115200, help='Baud rate. Default: 115200.')
     parser.add_argument('-u', '--udc', type=str, default='dummy_udc.0', help='UDC for direct USB mode. Default: dummy_udc.0 (loopback mode).')
     parser.add_argument('-R', '--record', type=str, default=None, help='Record events to file.')

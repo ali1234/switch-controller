@@ -46,7 +46,7 @@ class Gadget(object):
         return self._function
 
     def __enter__(self):
-        logger.debug('Creating gadget')
+        logger.debug('Creating functionfs')
 
         for k, v in self._device_params.items():
             setattr(self._configfs, k, v)
@@ -68,7 +68,7 @@ class Gadget(object):
         return self
 
     def __exit__(self, *args):
-        logger.info('Tearing down gadget')
+        logger.info('Tearing down functionfs')
 
         self.unbind()
 
@@ -76,7 +76,7 @@ class Gadget(object):
             self._function.close()
 
         if subprocess.call(['umount', self.mount_point]):
-            logger.info("Can't teardown gadget because functionfs is still in use.")
+            logger.info("Can't unmount functionfs because it is still in use.")
             return
 
         self.remove_function_from_config('ffs.' + self._name, 'c.1')
