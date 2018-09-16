@@ -17,11 +17,14 @@
 
 import binascii
 import logging
+import select
 
 import serial
 
 from .functionfs import Gadget, HIDFunction
 from .gadgetfs import Gadget as GadgetFS
+from .kaio import KAIOReader, KAIOWriter
+from .state import State
 
 logger = logging.getLogger(__name__)
 
@@ -64,21 +67,43 @@ class Serial(object):
 class GadgetWrapper(object):
     def __init__(self, gadget):
         self._gadget = gadget
+        self._ready = False
 
     def __enter__(self):
         self._gadget.__enter__()
         return self
 
     def __exit__(self, *args):
+        self.ep1.close()
+        self.ep2.close()
         self._gadget.__exit__(*args)
 
     def poll(self):
         self._gadget.processEvents()
-        return self._gadget._report_requested
+        if self._ready:
+            result = select.select([self.ep1.evfd, self.ep2.evfd], [], [], 0.1)
+
+            if self.ep2.evfd in result[0]:
+                logger.info('Got data from host: {:s}'.format(binascii.hexlify(self.ep2.read())))
+                self.ep2.submit()
+
+            if self.ep1.evfd in result[0]:
+                logger.debug('Write completed')
+                self.ep1.pump()
+                return True
+        else:
+            if self._gadget._report_requested:
+                self.ep1 = KAIOWriter(self._gadget._ep_list[1])
+                self.ep2 = KAIOReader(self._gadget._ep_list[2])
+                self.ep1.write(State().bytes)
+                self.ep2.submit()
+                self._ready = True
+                return True
+
+        return False
 
     def write(self, state):
-        # this write blocks so we get sync for free
-        self._gadget._ep_list[1].write(state.bytes)
+        self.ep1.write(state.bytes)
 
 
 
