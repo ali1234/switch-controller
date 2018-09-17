@@ -35,7 +35,8 @@ class Serial(object):
         self._port = port
         self._baud_rate = baud_rate
         self._file = None
-        self._state = True
+        self._arduino_alive = None
+        self._ping_sent = False
 
     def __enter__(self):
         self._file = serial.Serial(
@@ -49,17 +50,44 @@ class Serial(object):
     def __exit__(self, *args):
         self._file.close()
 
+
     def poll(self):
         response = self._file.read(1)
-        if response == b'U':
-            return True
-        elif response == b'X':
-            logger.error('Arduino reported buffer overrun.')
+        if response:
+            if self._arduino_alive is not True:
+                logger.warning('Arduino is connected.')
+                self._arduino_alive = True
+            self._ping_sent = False
+
+            if response == b'S':
+                # Arduino has sent a report to the switch and its endpoint is ready for more data
+                return True
+
+            elif response == b'R':
+                # Arduino received data from the Switch
+                logger.info('Arduino received data from the Switch.')
+                return False
+
+            elif response == b'O':
+                logger.error('Arduino reported buffer overrun.')
+                return False
+
+            elif response == b'P':
+                # Arduino replied to a ping
+                return False
+
+            else:
+                logger.error('Unexpected character from Arduino.')
+                return False
+
         else:
-            if self._state:
-                logger.warning('Serial read timed out.')
-                self._state = False
-        return False
+            # Serial time out.
+            if self._arduino_alive is not False and self._ping_sent:
+                logger.warning('Arduino is not responding.')
+                self._arduino_alive = False
+            self._file.write(b'P')
+            self._ping_sent = True
+            return False
 
     def write(self, state):
         self._file.write(state.hex + b'\n')

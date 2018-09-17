@@ -41,9 +41,11 @@ volatile uint8_t buffer[256];
 volatile uint8_t buffer_head = 0;
 volatile uint8_t buffer_tail = 0;
 ISR(USART1_RX_vect) {
-	if(buffer_head == (buffer_tail - 1))
-		printf("X"); // overrun
-	buffer[buffer_head++] = fgetc(stdin);
+    char tmp;
+	if(buffer_head == (buffer_tail - 1)) {
+		putchar('O'); // overrun
+    }
+	buffer[buffer_head++] = getchar();
 }
 
 
@@ -56,7 +58,7 @@ void Serial_Task(void) {
 
 	while(buffer_tail != buffer_head) {
 
-		c = buffer[buffer_tail];
+		c = buffer[buffer_tail++];
 
 		if ((c == '\r' || c == '\n')) {
 			if(l == 14) {
@@ -78,18 +80,17 @@ void Serial_Task(void) {
 			} else if (c >= 'A' && c <= 'F') {
 				val = (c - 'A') + 0xa;
 			} else {
-				val = 0xff;
+                if (c == 'P') {
+                    // Ping request
+                    putchar('P');
+                }
+                // Ignore this character
+				continue;
 			}
 
-			if (val == 0xff) {
-				// ignore none-hex and line endings
-				;
-			} else {
-				b[l/2] |= val << (4*((l+1)%2)); // hex 2 bin
-				l += 1;
-			}
+			b[l/2] |= val << (4*((l+1)%2)); // hex 2 bin
+			l += 1;
 		}
-		buffer_tail++;
 	}
 }
 
@@ -211,6 +212,7 @@ void HID_Task(void) {
 			Endpoint_Read_Stream_LE(&JoystickOutputData, sizeof(JoystickOutputData), NULL);
 			// At this point, we can react to this data.
 			// However, since we're not doing anything with this data, we abandon it.
+			putchar('R');
 		}
 		// Regardless of whether we reacted to the data, we acknowledge an OUT packet on this endpoint.
 		Endpoint_ClearOUT();
@@ -229,7 +231,7 @@ void HID_Task(void) {
 		// We then send an IN packet on this endpoint.
 		Endpoint_ClearIN();
 		// Inform host that a packet was sent.
-		printf("U");
+		putchar('S');
 
 		/* Clear the report data afterwards */
 		// memset(&JoystickInputData, 0, sizeof(JoystickInputData));
