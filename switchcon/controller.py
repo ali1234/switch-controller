@@ -75,6 +75,16 @@ class Controller(object):
             b"righttrigger:a5,leftshoulder:b5,rightshoulder:b2,"
         )
 
+        # Mapping for 8bitdo
+        sdl2.SDL_GameControllerAddMapping(
+            b"05000000c82d00002038000000010000,8Bitdo NES30 Pro,"
+            b"platform:Linux,x:b4,a:b1,b:b0,y:b3,back:b10,"
+            b"guide:b2,start:b11,dpleft:h0.8,dpdown:h0.4,"
+            b"dpright:h0.2,dpup:h0.1,leftshoulder:b6,lefttrigger:a5,"
+            b"rightshoulder:b8,righttrigger:a4,leftstick:b9,rightstick:a3,"
+            b"leftx:b14,lefty:a1,rightx:a2,"
+        )
+
         self.controller = None
         self.name = 'controller {:s}'.format(controller_id)
 
