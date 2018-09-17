@@ -18,6 +18,7 @@
 import binascii
 import logging
 import select
+import time
 
 import serial
 
@@ -106,6 +107,20 @@ class GadgetWrapper(object):
         self.ep1.write(state.bytes)
 
 
+class NullSink(object):
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    def poll(self):
+        time.sleep(0.01)
+        return True
+
+    def write(self, data):
+        pass
 
 def HAL(port, baud_rate, udc):
 
@@ -139,6 +154,9 @@ def HAL(port, baud_rate, udc):
         if udc == 'dummy_udc.0':
             udc = 'dummy_udc'
         return GadgetWrapper(GadgetFS(udc, device_params, device_strings, report_desc))
+
+    elif port == 'null':
+        return NullSink()
 
     else:
         return Serial(port, baud_rate)
