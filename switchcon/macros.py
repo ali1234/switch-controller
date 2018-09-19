@@ -130,22 +130,7 @@ class MacroManager(object):
 
         return n
 
-macro_funcs = {}
 
-def macro(f):
-    macro_funcs[f.__name__] = f
-    return f
-
-@macro
-def mash(divider):
-    divider = int(divider, 10)
-    s = State(buttons=0)
-    while True:
-        for i in range(divider+1):
-            yield s
-        s.buttons = ~s.buttons & 0xff
-
-@macro
 def file(filename):
     try:
         with open(filename, 'rb') as replay:
@@ -155,7 +140,7 @@ def file(filename):
         logger.error('Macro file "{:s}" does not exist yet.'.format(filename))
         raise StopIteration
 
-@macro
+
 def fileloop(filename):
     try:
         while True:

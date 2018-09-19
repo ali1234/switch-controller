@@ -21,7 +21,6 @@ import logging
 
 import sdl2
 import sdl2.ext
-import serial
 
 from tqdm import tqdm
 
@@ -30,6 +29,7 @@ from .state import State
 from .macros import MacroManager
 from .window import Window, WindowClosed
 from .hal import HAL
+from .fakeinput import fakeinput
 
 class Handler(logging.Handler):
     def emit(self, record):
@@ -65,11 +65,6 @@ class Recorder(object):
         if self.file is not None:
             self.file.write(state.hex + b'\n')
 
-def fakeinput():
-    s = State()
-    for i in itertools.count():
-        s.buttons = i&0xffff
-        yield s
 
 def main():
     parser = argparse.ArgumentParser()
