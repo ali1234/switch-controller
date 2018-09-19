@@ -32,6 +32,23 @@ class Axis(object):
     def __set__(self, instance, value):
         instance._axes[self.number] = value
 
+class Button(object):
+    """
+    Descriptor class to proved named buttons on top of the button bitfield
+    """
+
+    def __init__(self, number):
+        self.number = number
+
+    def __get__(self, instance, owner):
+        return (instance.buttons>>self.number)&1
+
+    def __set__(self, instance, value):
+        if value:
+            instance.buttons |= (1<<self.number)
+        else:
+            instance.buttons &= ~((1<<self.number)&0xffff)
+
 
 class State(object):
     """
@@ -43,6 +60,21 @@ class State(object):
     ly = Axis(1)
     rx = Axis(2)
     ry = Axis(3)
+
+    y = Button(0)
+    b = Button(1)
+    a = Button(2)
+    x = Button(3)
+    l = Button(4)
+    r = Button(5)
+    zl = Button(6)
+    zr = Button(7)
+    select = Button(8)
+    start = Button(9)
+    lclick = Button(10)
+    rclick = Button(11)
+    home = Button(12)
+    capture = Button(13)
 
     def __init__(self, buttons=0, hat=8, lx=127, ly=127, rx=127, ry=127):
         self.hat = hat
@@ -167,3 +199,10 @@ if __name__ == '__main__':
     print(s^s)
     print(s.hex)
     print(State.fromhex(s.hex))
+
+    print(s.a)
+
+    s.a = 1
+    print(s.buttons, s.a)
+    s.a = 0
+    print(s.buttons, s.a)
