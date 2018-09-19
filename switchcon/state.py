@@ -103,22 +103,22 @@ class State(object):
 
     def __and__(self, other):
         return State(
-            self.hat & other.hat,
             self.buttons & other.buttons,
+            self.hat & other.hat,
             *[x&y for x, y in zip(self.axes, other.axes)]
         )
 
     def __xor__(self, other):
         return State(
-            self.hat ^ other.hat,
             self.buttons ^ other.buttons,
+            self.hat ^ other.hat,
             *[x^y for x, y in zip(self.axes, other.axes)]
         )
 
     def __or__(self, other):
         return State(
-            self.hat | other.hat,
             self.buttons | other.buttons,
+            self.hat | other.hat,
             *[x|y for x, y in zip(self.axes, other.axes)]
         )
 

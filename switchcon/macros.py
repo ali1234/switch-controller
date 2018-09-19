@@ -117,7 +117,7 @@ class MacroManager(object):
             try:
                 m = next(self.playiter)
                 # OR buttons
-                n |= (m&State(0x00, 0xffff, 0, 0, 0, 0))
+                n |= (m&State(0xffff, 0x00, 0, 0, 0, 0))
                 # user hat overrides macro hat if not centred
                 n.hat = m.hat if n.hat == 8 else n.hat
                 # user axes override macro axes if > 50%
