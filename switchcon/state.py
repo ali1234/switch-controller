@@ -145,8 +145,8 @@ class State(object):
 
     def __invert__(self):
         return State(
-            ~self.hat&0xff,
             ~self.buttons&0xffff,
+            ~self.hat&0xff,
             *[~x&0xff for x in self._axes]
         )
 
