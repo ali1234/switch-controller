@@ -87,11 +87,13 @@ class Controller(object):
 
         self.controller = None
         self.name = 'controller {:s}'.format(controller_id)
+        self.which = None
 
         try:
             n = int(controller_id, 10)
             if n < sdl2.SDL_NumJoysticks():
                 self.controller = sdl2.SDL_GameControllerOpen(n)
+                self.which = n
         except ValueError:
             for n in range(sdl2.SDL_NumJoysticks()):
                 name = sdl2.SDL_JoystickNameForIndex(n)
@@ -99,6 +101,7 @@ class Controller(object):
                     name = name.decode('utf8')
                     if name == controller_id:
                         self.controller = sdl2.SDL_GameControllerOpen(n)
+                        self.which = n
 
         if self.controller is None:
             raise Exception('Controller not found: {:s}'.format(controller_id))

@@ -89,7 +89,7 @@ class MacroManager(object):
             self.log_macro_event('Stopped playing', self.playmacro)
             self.playmacro = None
 
-    def key_pressed(self, k):
+    def key_pressed(self, record):
 
         if self.recordmacro:
             self.record_stop()
@@ -97,12 +97,15 @@ class MacroManager(object):
             macro_name = self.previous_state.hexstr[:6] + '.macro'
             macro_file = self.macros_dir / macro_name
 
-            if not macro_file.exists():
+            if record:
                 self.record_start(macro_file)
-            elif macro_file.is_file():
-                self.play_start(macro_file)
             else:
-                raise FileNotFoundError("Macro file exists but isn't a regular file.")
+                if not macro_file.exists():
+                    logger.error('Macro not recorded yet.')
+                elif macro_file.is_file():
+                    self.play_start(macro_file)
+                else:
+                    raise FileNotFoundError("Macro file exists but isn't a regular file.")
 
     def __iter__(self):
         return self

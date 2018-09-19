@@ -75,6 +75,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--list-controllers', action='store_true', help='Display a list of controllers attached to the system.')
     parser.add_argument('-c', '--controller', type=str, default='0', help='Controller to use. Default: 0.')
+    parser.add_argument('-m', '--macro-controller', metavar='CONTROLLER:RECORD_BUTTON:PLAY_BUTTON', type=str, default=None, help='Controller and buttons to use for macro control. Default: None.')
     parser.add_argument('-p', '--port', type=str, default='/dev/ttyUSB0', help='Serial port or "functionfs" for direct USB mode. Default: /dev/ttyUSB0.')
     parser.add_argument('-b', '--baud-rate', type=int, default=115200, help='Baud rate. Default: 115200.')
     parser.add_argument('-u', '--udc', type=str, default='dummy_udc.0', help='UDC for direct USB mode. Default: dummy_udc.0 (loopback mode).')
@@ -106,6 +107,33 @@ def main():
     if args.playback is not None:
         states = itertools.chain(replay_states(args.playback), states)
 
+    macro_controller = None
+    macro_record = None
+    macro_play = None
+
+    if args.macro_controller is not None:
+        try:
+            macro_controller, macro_record, macro_play = args.macro_controller.rsplit(':', maxsplit=3)
+            macro_record = int(macro_record, 10)
+            macro_play = int(macro_play, 10)
+        except ValueError:
+            logger.critical('Macro controller must be <controller number or name>:<record button>:<play button>')
+            exit(-1)
+
+        try:
+            n = int(macro_controller, 10)
+            if n < sdl2.SDL_NumJoysticks():
+                sdl2.SDL_JoystickOpen(n)
+                macro_controller = n
+        except ValueError:
+            for n in range(sdl2.SDL_NumJoysticks()):
+                name = sdl2.SDL_JoystickNameForIndex(n)
+                if name is not None:
+                    name = name.decode('utf8')
+                    if name == macro_controller:
+                        sdl2.SDL_JoystickOpen(n)
+                        macro_controller = n
+
     window = None
     try:
         window = Window()
@@ -132,10 +160,19 @@ def main():
                                 else:
                                     if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
                                         logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
-                                        if  event.key.keysym.sym == sdl2.SDLK_SPACE:
-                                            mm.key_pressed(True)
+                                        if event.key.keysym.sym == sdl2.SDLK_SPACE:
+                                            mm.key_pressed(record=True)
+                                        elif event.key.keysym.sym == sdl2.SDLK_KP_ENTER:
+                                            mm.key_pressed(record=False)
                                     elif event.type == sdl2.SDL_KEYUP:
                                         logger.debug('Key up: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
+                                    elif event.type == sdl2.SDL_JOYBUTTONDOWN:
+                                        if event.jdevice.which == macro_controller:
+                                            logger.debug('Macro controller: {:d}'.format(event.jbutton.button))
+                                            if event.jbutton.button == macro_record:
+                                                mm.key_pressed(record=True)
+                                            elif event.jbutton.button == macro_play:
+                                                mm.key_pressed(record=False)
 
                             # wait for the arduino to request another state.
                             if hal.poll():
