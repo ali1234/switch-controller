@@ -26,10 +26,10 @@ from tqdm import tqdm
 
 from .controller import Controller
 from .state import State
-from .macros import MacroManager
+from .macromanager import MacroManager
 from .window import Window, WindowClosed
 from .hal import HAL
-from .fakeinput import fakeinput
+from .macros import fakeinput, macros_dict
 
 class Handler(logging.Handler):
     def emit(self, record):
@@ -79,6 +79,7 @@ def main():
     parser.add_argument('-d', '--dontexit', action='store_true', help='Switch to live input when playback finishes, instead of exiting. Default: False.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Disable speed meter. Default: False.')
     parser.add_argument('-M', '--macros-dir', type=str, default='.', help='Directory to save macros. Default: current directory.')
+    parser.add_argument('-f', '--function', type=str, nargs='*', default=[], help='Map a macro function to a button.')
     parser.add_argument('-D', '--log-level', type=str, default='INFO', help='Debugging level. CRITICAL, ERROR, WARNING, INFO, DEBUG. Default=INFO')
 
     args = parser.parse_args()
@@ -136,8 +137,17 @@ def main():
         logger.warning('Could not create a window with SDL. Keyboard input will not be available.')
         pass
 
+    function_macros = {}
+    for arg in args.function:
+        try:
+            b,f = arg.split(':')
+            function_macros[int(b, 10)] = macros_dict[f]
+        except ValueError:
+            logger.error('Invalid function macro ignored.')
+        except KeyError:
+            logger.error('Invalid function macro ignored.')
 
-    with MacroManager(states, macros_dir=args.macros_dir) as mm:
+    with MacroManager(states, macros_dir=args.macros_dir, record_button=macro_record, play_button=macro_play, function_macros=function_macros) as mm:
         with Recorder(args.record) as record:
             with HAL(args.port, args.baud_rate, args.udc) as hal:
                 with tqdm(unit=' updates', disable=args.quiet, dynamic_ncols=True) as pbar:
@@ -155,19 +165,16 @@ def main():
                                 else:
                                     if event.type == sdl2.SDL_KEYDOWN and event.key.repeat == 0:
                                         logger.debug('Key down: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
-                                        if event.key.keysym.sym == sdl2.SDLK_SPACE:
-                                            mm.key_pressed(record=True)
-                                        elif event.key.keysym.sym == sdl2.SDLK_KP_ENTER:
-                                            mm.key_pressed(record=False)
+                                        mm.key_event(event.key.keysym.sym, True)
                                     elif event.type == sdl2.SDL_KEYUP:
                                         logger.debug('Key up: {:s}'.format(sdl2.SDL_GetKeyName(event.key.keysym.sym).decode('utf8')))
-                                    elif event.type == sdl2.SDL_JOYBUTTONDOWN:
-                                        if event.jdevice.which == macro_controller:
-                                            logger.debug('Macro controller: {:d}'.format(event.jbutton.button))
-                                            if event.jbutton.button == macro_record:
-                                                mm.key_pressed(record=True)
-                                            elif event.jbutton.button == macro_play:
-                                                mm.key_pressed(record=False)
+                                        mm.key_event(event.key.keysym.sym, False)
+                                    elif event.jdevice.which == macro_controller:
+                                        if event.type == sdl2.SDL_JOYBUTTONDOWN:
+                                            logger.debug('Macro controller button down: {:d}'.format(event.jbutton.button))
+                                            mm.button_event(event.jbutton.button, True)
+                                        elif event.type == sdl2.SDL_JOYBUTTONUP:
+                                            mm.button_event(event.jbutton.button, True)
 
                             # wait for the arduino to request another state.
                             if hal.poll():
