@@ -174,7 +174,7 @@ def main():
                                             logger.debug('Macro controller button down: {:d}'.format(event.jbutton.button))
                                             mm.button_event(event.jbutton.button, True)
                                         elif event.type == sdl2.SDL_JOYBUTTONUP:
-                                            mm.button_event(event.jbutton.button, True)
+                                            mm.button_event(event.jbutton.button, False)
 
                             # wait for the arduino to request another state.
                             if hal.poll():
