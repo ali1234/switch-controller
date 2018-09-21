@@ -9,15 +9,6 @@ def macro(f):
     return f
 
 
-def mash(divider):
-    divider = int(divider, 10)
-    s = State(buttons=0)
-    while True:
-        for i in range(divider+1):
-            yield s
-        s.buttons = ~s.buttons & 0xff
-
-
 def press_and_release(button, n, state=None):
     # if a state argument is passed in we will modify it - so other inputs will be kept
     # if not make a new one, all other buttons and axes will be at rest
@@ -32,7 +23,7 @@ def press_and_release(button, n, state=None):
         yield state
 
 
-# this is your "main" function - select it with the "-c fake" controller input
+# this is the function used by the "-c fake" controller
 def fakeinput():
     state = State()
 
@@ -53,3 +44,16 @@ def fakeinput():
 def testmacro():
     for i in range(10):
         yield from press_and_release('a', 100)
+
+
+@macro
+def leftright():
+    repeat = 6
+    state = State()
+    while True:
+        state.lx = 0
+        for x in range(repeat):
+            yield state
+        state.lx = 255
+        for x in range(repeat):
+            yield state

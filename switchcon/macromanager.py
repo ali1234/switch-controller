@@ -33,9 +33,6 @@ class MacroManager(object):
         self.playmacro = None
         self.playiter = None
 
-        self.fmacro = None
-        self.fiter = None
-
         self.record_button = record_button
         self.play_button = play_button
 
@@ -129,12 +126,18 @@ class MacroManager(object):
                 self.recorder_control(False)
             else:
                 if button in self.function_macros:
+
                     if self.playmacro is None:
                         self.playmacro = self.function_macros[button].__name__
                         self.log_macro_event('Playing', self.playmacro)
                         self.playiter = self.function_macros[button]()
+                    elif self.playmacro == self.function_macros[button].__name__:
+                        self.play_stop()
                     else:
                         self.play_stop()
+                        self.playmacro = self.function_macros[button].__name__
+                        self.log_macro_event('Playing', self.playmacro)
+                        self.playiter = self.function_macros[button]()
 
         else:
             pass
