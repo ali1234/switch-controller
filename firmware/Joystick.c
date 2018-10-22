@@ -87,8 +87,9 @@ void Serial_Task(void) {
                 // Ignore this character
 				continue;
 			}
-
-			b[l/2] |= val << (4*((l+1)%2)); // hex 2 bin
+			if (l < 14) {  // Prevent buffer overflow
+				b[l/2] |= val << (4*((l+1)%2)); // hex 2 bin
+			}
 			l += 1;
 		}
 	}
