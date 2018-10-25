@@ -41,10 +41,10 @@ volatile uint8_t buffer[256];
 volatile uint8_t buffer_head = 0;
 volatile uint8_t buffer_tail = 0;
 ISR(USART1_RX_vect) {
-    char tmp;
+	char tmp;
 	if(buffer_head == (buffer_tail - 1)) {
 		putchar('O'); // overrun
-    }
+	}
 	buffer[buffer_head++] = getchar();
 }
 
@@ -80,12 +80,14 @@ void Serial_Task(void) {
 			} else if (c >= 'A' && c <= 'F') {
 				val = (c - 'A') + 0xa;
 			} else {
-                if (c == 'P') {
-                    // Ping request
-                    putchar('P');
-                }
-                // Ignore this character
+
+				if (c == 'P') {
+					// Ping request
+					putchar('P');
+				}
+				// Ignore this character
 				continue;
+
 			}
 			if (l < 14) {  // Prevent buffer overflow
 				b[l/2] |= val << (4*((l+1)%2)); // hex 2 bin
